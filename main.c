@@ -3,6 +3,7 @@
 #include <string.h>
 #include <stdbool.h>
 #include <time.h>
+#include <signal.h>
 #include <SDL.h>
 #ifdef __EMSCRIPTEN__
 #include <emscripten.h>
