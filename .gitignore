@@ -1,0 +1,11 @@
+.DS_Store
+*.o
+roms/
+pac
+TODO.md
+
+# ignoring web output
+pac.html
+pac.js
+pac.data
+pac.wasm
