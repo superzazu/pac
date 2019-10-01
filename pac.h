@@ -9,11 +9,11 @@
 #include "z80/z80.h"
 #include "wsg.h"
 
-#define CLOCK_SPEED 3072000 // 3.072 MHz (= number of cycles per second)
-#define FPS 60
-#define CYCLES_PER_FRAME (CLOCK_SPEED / FPS)
-#define SCREEN_WIDTH 224
-#define SCREEN_HEIGHT 288
+#define PAC_CLOCK_SPEED 3072000 // 3.072 MHz (= number of cycles per second)
+#define PAC_FPS 60
+#define PAC_CYCLES_PER_FRAME (PAC_CLOCK_SPEED / PAC_FPS)
+#define PAC_SCREEN_WIDTH 224
+#define PAC_SCREEN_HEIGHT 288
 
 typedef struct pac pac;
 struct pac {
@@ -45,7 +45,7 @@ struct pac {
     bool board_test, p1_start, p2_start;
 
     // ppu
-    u8 screen_buffer[SCREEN_HEIGHT * SCREEN_WIDTH * 3];
+    u8 screen_buffer[PAC_SCREEN_HEIGHT * PAC_SCREEN_WIDTH * 3];
     void (*update_screen)(pac* const n);
 
     // audio

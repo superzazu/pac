@@ -38,8 +38,8 @@ You can also build it for the web if you have emscripten installed. Just run `ma
 
 Computer | pac
 --- | ---
-c | insert a coin
-return | start a game (1 player)
+1 or c | insert a coin
+5 or return | start a game (1 player)
 2 | start a game (2 players)
 arrow keys | move the player
 p | pause the emulation

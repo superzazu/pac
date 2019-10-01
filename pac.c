@@ -49,7 +49,11 @@ static u8 rb(void* userdata, u16 addr) {
                 (1 << 7); // cabinet mode: 1=upright 0=table
         }
         else if (addr >= 0x5080 && addr <= 0x50bf) { // dip switch
-            // @TODO: customisable dipswitch
+            // bit 0-1: 1 Coin 1 Credit
+            // bit 2-3: 3 Pacman Per Game
+            // bit 4-5: Bonus Player @ 10000 Pts
+            // bit 6: Difficulty (normal=1, hard=0)
+            // bit 7: Alternate ghost names
             return 0b11001001;
         }
     }
@@ -125,8 +129,8 @@ static void port_out(z80* const z, u8 port, u8 val) {
     }
 }
 
-// appends two strings, creating a new string in the process. The pointer
-// returned is owned by the user.
+// appends two NULL-terminated strings, creating a new string in the process.
+// The pointer returned is owned by the user.
 static char* append_path(const char* s1, const char* s2) {
     const int buf_size = strlen(s1) + strlen(s2) + 1;
     char* path = calloc(buf_size, sizeof(char));
@@ -240,7 +244,7 @@ static void preload_images(pac* const p) {
 }
 
 static void draw_tile(pac* const p, u8 tile_no, u8* pal, u16 x, u16 y) {
-    if (x < 0 || x >= SCREEN_WIDTH) {
+    if (x < 0 || x >= PAC_SCREEN_WIDTH) {
         return;
     }
 
@@ -249,7 +253,7 @@ static void draw_tile(pac* const p, u8 tile_no, u8* pal, u16 x, u16 y) {
         int py = i / 8;
 
         u8 color = p->tiles[tile_no * 64 + i];
-        int screenbuf_pos = (y + py) * SCREEN_WIDTH + (x + px);
+        int screenbuf_pos = (y + py) * PAC_SCREEN_WIDTH + (x + px);
 
         get_color(p, pal[color],
             &p->screen_buffer[screenbuf_pos * 3 + 0],
@@ -260,11 +264,11 @@ static void draw_tile(pac* const p, u8 tile_no, u8* pal, u16 x, u16 y) {
 
 static void draw_sprite(pac* const p, u8 sprite_no, u8* pal,
                         int16_t x, int16_t y, bool flip_x, bool flip_y) {
-    if (x <= -16 || x > SCREEN_WIDTH) {
+    if (x <= -16 || x > PAC_SCREEN_WIDTH) {
         return;
     }
 
-    const int base_i = y * SCREEN_WIDTH + x;
+    const int base_i = y * PAC_SCREEN_WIDTH + x;
 
     for (int i = 0; i < 16 * 16; i++) {
         int px = i % 16;
@@ -279,9 +283,9 @@ static void draw_sprite(pac* const p, u8 sprite_no, u8* pal,
 
         int x_pos = flip_x ? 15 - px : px;
         int y_pos = flip_y ? 15 - py : py;
-        int screenbuf_pos = base_i + y_pos * SCREEN_WIDTH + x_pos;
+        int screenbuf_pos = base_i + y_pos * PAC_SCREEN_WIDTH + x_pos;
 
-        if (x + x_pos < 0 || x + x_pos >= SCREEN_WIDTH) {
+        if (x + x_pos < 0 || x + x_pos >= PAC_SCREEN_WIDTH) {
             continue;
         }
 
@@ -370,8 +374,8 @@ static void pac_draw(pac* const p) {
     for (int s = 7; s >= 0; s--) {
         // the screen coordinates of a sprite start on the lower right corner
         // of the main screen:
-        const int16_t x = SCREEN_WIDTH - p->sprite_pos[s * 2] + 15;
-        const int16_t y = SCREEN_HEIGHT - p->sprite_pos[s * 2 + 1] - 16;
+        const int16_t x = PAC_SCREEN_WIDTH - p->sprite_pos[s * 2] + 15;
+        const int16_t y = PAC_SCREEN_HEIGHT - p->sprite_pos[s * 2 + 1] - 16;
 
         const u8 sprite_info = rb(p, VRAM_SPRITES_INFO + s * 2);
         const u8 palette_no = rb(p, VRAM_SPRITES_INFO + s * 2 + 1);
@@ -396,7 +400,7 @@ static void sound_update(pac* const p) {
 
     // resampling the 96kHz audio stream from the WSG into a 44.1kHz one
     float d = (float) WSG_SAMPLE_RATE / (float) p->sample_rate;
-    for (int i = 0; i < p->sample_rate / FPS; i++) {
+    for (int i = 0; i < p->sample_rate / PAC_FPS; i++) {
         int pos = d * (float) i;
         p->push_sample(p, p->audio_buffer[pos]);
     }
@@ -474,7 +478,7 @@ int pac_init(pac* const p, const char* rom_dir) {
 
     // audio
     wsg_init(&p->sound_chip, p->sound_rom1);
-    p->audio_buffer_len = WSG_SAMPLE_RATE / FPS;
+    p->audio_buffer_len = WSG_SAMPLE_RATE / PAC_FPS;
     p->audio_buffer = calloc(p->audio_buffer_len, sizeof(int16_t));
     p->sample_rate = 44100;
     p->mute_audio = false;
@@ -489,17 +493,17 @@ void pac_quit(pac* const p) {
 
 // updates emulation for "ms" milliseconds.
 void pac_update(pac* const p, int ms) {
-    // machine executes exactly CLOCK_SPEED cycles every second, so we need
-    // to execute "ms * CLOCK_SPEED / 1000"
+    // machine executes exactly PAC_CLOCK_SPEED cycles every second,
+    // so we need to execute "ms * PAC_CLOCK_SPEED / 1000"
     int count = 0;
-    while (count < ms * CLOCK_SPEED / 1000) {
+    while (count < ms * PAC_CLOCK_SPEED / 1000) {
         int cyc = p->cpu.cyc;
         z80_step(&p->cpu);
         int elapsed = p->cpu.cyc - cyc;
         count += elapsed;
 
-        if (p->cpu.cyc >= CYCLES_PER_FRAME) {
-            p->cpu.cyc -= CYCLES_PER_FRAME;
+        if (p->cpu.cyc >= PAC_CYCLES_PER_FRAME) {
+            p->cpu.cyc -= PAC_CYCLES_PER_FRAME;
 
             // trigger vblank if enabled:
             if (p->vblank_enabled) {

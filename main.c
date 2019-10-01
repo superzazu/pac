@@ -4,10 +4,12 @@
 #include <stdbool.h>
 #include <time.h>
 #include <signal.h>
+
 #include <SDL.h>
 #ifdef __EMSCRIPTEN__
 #include <emscripten.h>
 #endif
+
 #include "pac.h"
 
 #define CONTROLLER_DEADZONE 8000
@@ -20,10 +22,9 @@ static int speed = 1;
 static SDL_Renderer* renderer = NULL;
 static SDL_Texture* texture = NULL;
 static SDL_GameController* controller = NULL;
-static SDL_AudioDeviceID audio_device;
+static SDL_AudioDeviceID audio_device = 0;
 
-static pac* p;
-static SDL_Event e;
+static pac* p = NULL;
 static uint32_t current_time = 0;
 static uint32_t last_time = 0;
 static uint32_t dt = 0;
@@ -35,7 +36,7 @@ static void update_screen(pac* const p) {
         SDL_Log("Unable to lock texture: %s", SDL_GetError());
     }
     else {
-        memcpy(pixels, p->screen_buffer, pitch * SCREEN_HEIGHT);
+        SDL_memcpy(pixels, p->screen_buffer, pitch * PAC_SCREEN_HEIGHT);
     }
     SDL_UnlockTexture(texture);
 }
@@ -53,7 +54,7 @@ static void screenshot(pac* const p) {
     time_t t = time(NULL);
     struct tm tm = *localtime(&t);
 
-    char *filename = (char*) calloc(50, sizeof(char));
+    char* filename = SDL_calloc(50, sizeof(char));
 
     sprintf(filename,"%d-%d-%d %d.%d.%d - %s.bmp",
         tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday,
@@ -61,31 +62,34 @@ static void screenshot(pac* const p) {
         "pac");
 
     // if file already exists, we don't want to erase it
-    FILE *f = fopen(filename, "r");
-    if (f) {
+    FILE* f = fopen(filename, "r");
+    if (f != NULL) {
         SDL_LogError(SDL_LOG_CATEGORY_APPLICATION,
             "Cannot save screenshot: file %s already exists", filename);
+        SDL_free(filename);
+        fclose(f);
         return;
     }
     fclose(f);
 
     // render screen buffer to BMP file
-    const uint32_t pitch = sizeof(uint8_t) * 3 * SCREEN_WIDTH;
+    const uint32_t pitch = sizeof(uint8_t) * 3 * PAC_SCREEN_WIDTH;
     const uint8_t depth = 32;
     SDL_Surface* s = SDL_CreateRGBSurfaceWithFormatFrom(
-        p->screen_buffer, SCREEN_WIDTH, SCREEN_HEIGHT,
+        p->screen_buffer, PAC_SCREEN_WIDTH, PAC_SCREEN_HEIGHT,
         depth, pitch, SDL_PIXELFORMAT_RGB24);
     SDL_SaveBMP(s, filename);
     SDL_FreeSurface(s);
 
     SDL_Log("Saved screenshot: %s", filename);
-    free(filename);
+    SDL_free(filename);
 }
 
 static void mainloop(void) {
     current_time = SDL_GetTicks();
     dt = current_time - last_time;
 
+    SDL_Event e;
     while (SDL_PollEvent(&e) != 0) {
         if (e.type == SDL_QUIT) {
             should_quit = true;
@@ -99,40 +103,46 @@ static void mainloop(void) {
             }
         }
         else if (e.type == SDL_KEYDOWN) {
-            switch (e.key.keysym.sym) {
-                case SDLK_RETURN: case SDLK_1: p->p1_start = 1; break; // start (1p)
-                case SDLK_2: p->p2_start = 1; break; // start (2p)
-                case SDLK_UP: p->p1_up = 1; break; // up
-                case SDLK_DOWN: p->p1_down = 1; break; // down
-                case SDLK_LEFT: p->p1_left = 1; break; // left
-                case SDLK_RIGHT: p->p1_right = 1; break; // right
-                case SDLK_c: p->coin_s1 = 1; break; // coin
-                case SDLK_v: p->coin_s2 = 1; break; // coin (slot 2)
-                case SDLK_t: p->board_test = 1; break; // board test
+            switch (e.key.keysym.scancode) {
+                case SDL_SCANCODE_RETURN: case SDL_SCANCODE_1:
+                    p->p1_start = 1; break; // start (1p)
+                case SDL_SCANCODE_2: p->p2_start = 1; break; // start (2p)
+                case SDL_SCANCODE_UP: p->p1_up = 1; break; // up
+                case SDL_SCANCODE_DOWN: p->p1_down = 1; break; // down
+                case SDL_SCANCODE_LEFT: p->p1_left = 1; break; // left
+                case SDL_SCANCODE_RIGHT: p->p1_right = 1; break; // right
+                case SDL_SCANCODE_C: case SDL_SCANCODE_5:
+                    p->coin_s1 = 1; break; // coin
+                case SDL_SCANCODE_V: p->coin_s2 = 1; break; // coin (slot 2)
+                case SDL_SCANCODE_T: p->board_test = 1; break; // board test
 
-                case SDLK_m: p->mute_audio = !p->mute_audio; break;
-                case SDLK_p: is_paused = !is_paused; break;
-                case SDLK_s: screenshot(p); break;
-                case SDLK_i: pac_cheat_invincibility(p); break;
-                case SDLK_TAB: speed = 5; break;
+                case SDL_SCANCODE_M: p->mute_audio = !p->mute_audio; break;
+                case SDL_SCANCODE_P: is_paused = !is_paused; break;
+                case SDL_SCANCODE_S: screenshot(p); break;
+                case SDL_SCANCODE_I: pac_cheat_invincibility(p); break;
+                case SDL_SCANCODE_TAB: speed = 5; break;
+                default: break;
             }
         }
         else if (e.type == SDL_KEYUP) {
-            switch (e.key.keysym.sym) {
-                case SDLK_RETURN: case SDLK_1: p->p1_start = 0; break; // start (1p)
-                case SDLK_2: p->p2_start = 0; break; // start (2p)
-                case SDLK_UP: p->p1_up = 0; break; // up
-                case SDLK_DOWN: p->p1_down = 0; break; // down
-                case SDLK_LEFT: p->p1_left = 0; break; // left
-                case SDLK_RIGHT: p->p1_right = 0; break; // right
-                case SDLK_c: p->coin_s1 = 0; break; // coin
-                case SDLK_v: p->coin_s2 = 0; break; // coin (slot 2)
-                case SDLK_t: p->board_test = 0; break; // board test
-                case SDLK_TAB:
+            switch (e.key.keysym.scancode) {
+                case SDL_SCANCODE_RETURN: case SDL_SCANCODE_1:
+                    p->p1_start = 0; break; // start (1p)
+                case SDL_SCANCODE_2: p->p2_start = 0; break; // start (2p)
+                case SDL_SCANCODE_UP: p->p1_up = 0; break; // up
+                case SDL_SCANCODE_DOWN: p->p1_down = 0; break; // down
+                case SDL_SCANCODE_LEFT: p->p1_left = 0; break; // left
+                case SDL_SCANCODE_RIGHT: p->p1_right = 0; break; // right
+                case SDL_SCANCODE_C: case SDL_SCANCODE_5:
+                    p->coin_s1 = 0; break; // coin
+                case SDL_SCANCODE_V: p->coin_s2 = 0; break; // coin (slot 2)
+                case SDL_SCANCODE_T: p->board_test = 0; break; // board test
+                case SDL_SCANCODE_TAB:
                     speed = 1;
                     // clear the queued audio to avoid audio delays
                     SDL_ClearQueuedAudio(audio_device);
                 break;
+                default: break;
             }
         }
         else if (e.type == SDL_CONTROLLERBUTTONDOWN) {
@@ -229,8 +239,8 @@ int main(int argc, char** argv) {
     SDL_Window* window = SDL_CreateWindow("pac",
         SDL_WINDOWPOS_CENTERED,
         SDL_WINDOWPOS_CENTERED,
-        SCREEN_WIDTH * 2,
-        SCREEN_HEIGHT * 2,
+        PAC_SCREEN_WIDTH * 2,
+        PAC_SCREEN_HEIGHT * 2,
         SDL_WINDOW_RESIZABLE);
 
     if (window == NULL) {
@@ -238,7 +248,7 @@ int main(int argc, char** argv) {
         return 1;
     }
 
-    SDL_SetWindowMinimumSize(window, SCREEN_WIDTH, SCREEN_HEIGHT);
+    SDL_SetWindowMinimumSize(window, PAC_SCREEN_WIDTH, PAC_SCREEN_HEIGHT);
 
     // create renderer
     renderer = SDL_CreateRenderer(
@@ -248,7 +258,7 @@ int main(int argc, char** argv) {
         return 1;
     }
 
-    SDL_RenderSetLogicalSize(renderer, SCREEN_WIDTH, SCREEN_HEIGHT);
+    SDL_RenderSetLogicalSize(renderer, PAC_SCREEN_WIDTH, PAC_SCREEN_HEIGHT);
 
     // print info on renderer:
     SDL_RendererInfo renderer_info;
@@ -259,8 +269,8 @@ int main(int argc, char** argv) {
         renderer,
         SDL_PIXELFORMAT_RGB24,
         SDL_TEXTUREACCESS_STREAMING,
-        SCREEN_WIDTH,
-        SCREEN_HEIGHT);
+        PAC_SCREEN_WIDTH,
+        PAC_SCREEN_HEIGHT);
     if (texture == NULL) {
         SDL_Log("Unable to create texture: %s", SDL_GetError());
         return 1;
@@ -310,7 +320,7 @@ int main(int argc, char** argv) {
     char* base_path = SDL_GetBasePath();
     char* rom_dir = argc > 1 ? argv[1] : base_path;
 
-    p = calloc(1, sizeof(pac));
+    p = SDL_calloc(1, sizeof(pac));
     if (pac_init(p, rom_dir) != 0) {
         return 1;
     }
@@ -333,7 +343,7 @@ int main(int argc, char** argv) {
     #endif
 
     pac_quit(p);
-    free(p);
+    SDL_free(p);
 
     if (controller != NULL) {
         SDL_GameControllerClose(controller);
