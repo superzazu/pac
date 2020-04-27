@@ -3,6 +3,7 @@
 roms/
 pac
 TODO.md
+.vscode/
 
 # ignoring web output
 pac.html

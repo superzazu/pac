@@ -2,8 +2,8 @@ bin = pac
 src = $(wildcard *.c) z80/z80.c
 obj = $(src:.c=.o)
 
-CFLAGS = -g -Wall -Wextra -O2 -std=c99 -pedantic -Wno-gnu-binary-literal $(shell pkg-config --cflags sdl2)
-LDFLAGS = $(shell pkg-config --libs sdl2)
+CFLAGS = -g -Wall -Wextra -O2 -std=c99 -pedantic -Wno-gnu-binary-literal $(shell sdl2-config --cflags)
+LDFLAGS = $(shell sdl2-config --libs)
 
 ifeq ($(MAKECMDGOALS),web)
 CC = emcc

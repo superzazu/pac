@@ -7,16 +7,16 @@
 #define WSG_SAMPLE_RATE 96000
 
 typedef struct wsg_voice {
-    uint32_t frequency; // 20 bit value
-    uint32_t accumulator; // 20 bit value
-    uint8_t waveform_no; // 3 bit value
-    uint8_t volume; // 4 bit value
+  uint32_t frequency; // 20 bit value
+  uint32_t accumulator; // 20 bit value
+  uint8_t waveform_no; // 3 bit value
+  uint8_t volume; // 4 bit value
 } wsg_voice;
 
 typedef struct wsg {
-    wsg_voice voices[3];
-    uint8_t* sound_rom;
-    int gain;
+  wsg_voice voices[3];
+  uint8_t* sound_rom;
+  int gain;
 } wsg;
 
 void wsg_init(wsg* const w, uint8_t* const sound_rom);

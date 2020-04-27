@@ -17,44 +17,44 @@
 
 typedef struct pac pac;
 struct pac {
-    z80 cpu;
-    u8 rom[0x4000]; // 0x0000-0x4000
-    u8 ram[0x1000]; // 0x4000-0x5000
-    u8 sprite_pos[0x10]; // 0x5060-0x506f
+  z80 cpu;
+  u8 rom[0x10000]; // 0x0000-0x4000
+  u8 ram[0x1000]; // 0x4000-0x5000
+  u8 sprite_pos[0x10]; // 0x5060-0x506f
 
-    u8 color_rom[32];
-    u8 palette_rom[0x100];
-    u8 tile_rom[0x1000];
-    u8 sprite_rom[0x1000];
-    u8 sound_rom1[0x100];
-    u8 sound_rom2[0x100];
+  u8 color_rom[32];
+  u8 palette_rom[0x100];
+  u8 tile_rom[0x1000];
+  u8 sprite_rom[0x1000];
+  u8 sound_rom1[0x100];
+  u8 sound_rom2[0x100];
 
-    u8 tiles[256 * 8 * 8]; // to store predecoded tiles
-    u8 sprites[64 * 16 * 16]; // to store predecoded sprites
+  u8 tiles[256 * 8 * 8]; // to store predecoded tiles
+  u8 sprites[64 * 16 * 16]; // to store predecoded sprites
 
-    u8 int_vector;
-    bool vblank_enabled;
-    bool sound_enabled;
-    bool flip_screen;
+  u8 int_vector;
+  bool vblank_enabled;
+  bool sound_enabled;
+  bool flip_screen;
 
-    // in 0 port
-    bool p1_up, p1_left, p1_right, p1_down, rack_advance, coin_s1, coin_s2,
-        credits_btn;
+  // in 0 port
+  bool p1_up, p1_left, p1_right, p1_down, rack_advance, coin_s1, coin_s2,
+      credits_btn;
 
-    // in 1 port
-    bool board_test, p1_start, p2_start;
+  // in 1 port
+  bool board_test, p1_start, p2_start;
 
-    // ppu
-    u8 screen_buffer[PAC_SCREEN_HEIGHT * PAC_SCREEN_WIDTH * 3];
-    void (*update_screen)(pac* const n);
+  // ppu
+  u8 screen_buffer[PAC_SCREEN_HEIGHT * PAC_SCREEN_WIDTH * 3];
+  void (*update_screen)(pac* const n);
 
-    // audio
-    wsg sound_chip;
-    int audio_buffer_len;
-    int16_t* audio_buffer;
-    int sample_rate;
-    bool mute_audio;
-    void (*push_sample)(pac* const n, int16_t);
+  // audio
+  wsg sound_chip;
+  int audio_buffer_len;
+  int16_t* audio_buffer;
+  int sample_rate;
+  bool mute_audio;
+  void (*push_sample)(pac* const n, int16_t);
 };
 
 int pac_init(pac* const p, const char* rom_dir);
