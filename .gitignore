@@ -1,12 +1,6 @@
 .DS_Store
-*.o
-roms/
-pac
-TODO.md
 .vscode/
-
-# ignoring web output
-pac.html
-pac.js
-pac.data
-pac.wasm
+build/
+build-web/
+roms/
+TODO.md

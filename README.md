@@ -7,11 +7,10 @@ A [Pac-Man (1980 arcade game)](https://en.wikipedia.org/wiki/Pac-Man) emulator w
 Features:
 
 - [x] full emulation
-- [x] sound
+- [x] sound emulation
 - [x] two-player mode
 - [x] joystick support
-- [x] web export to HTML5 using emscripten (use `make web`)
-- [ ] cocktail mode
+- [x] web export to HTML5 using emscripten
 
 The emulator has been tested with Midway Pac-Man (North American ver.):
 
@@ -30,23 +29,33 @@ SHA256(pacman.6j)= 03ee523c210e87fb8dd1d925b092ad269fdd753b5b7a20b3757b0ceee5f18
 
 ## How to build
 
-You should be able to launch it by running `make && ./pac path-to-roms/`. It has been tested on macOS 10.14 with clang and debian 9 with gcc 5.
+You should be able to launch it by running:
 
-You can also build it for the web if you have emscripten installed. Just run `make web` to obtain four "pac.(js|wasm|data|html)" files which can be hosted on a web server.
+```bash
+mkdir build
+cd build
+cmake ..
+make
+./pac ./roms/
+```
+
+It has been tested on macOS 10.15 with clang and debian 10 with gcc 8.3.
+
+You can also build it for the web if you have emscripten installed. Just run `emcmake cmake .. -DROMS_DIR=../roms && emmake make` to obtain four "pac.(js|wasm|data|html)" files which can be hosted on a web server.
 
 ## How to play
 
-Computer | pac
---- | ---
-1 or c | insert a coin
-5 or return | start a game (1 player)
-2 | start a game (2 players)
-arrow keys | move the player
-p | pause the emulation
-m | mute audio
-s | take a screenshot
-t | run the board test
-tab | run the emulation at x5 speed
+| Computer    | pac                           |
+| ----------- | ----------------------------- |
+| 1 or c      | insert a coin                 |
+| 5 or return | start a game (1 player)       |
+| 2           | start a game (2 players)      |
+| arrow keys  | move the player               |
+| p           | pause the emulation           |
+| m           | mute audio                    |
+| s           | take a screenshot             |
+| t           | run the board test            |
+| tab         | run the emulation at x5 speed |
 
 ## Resources
 

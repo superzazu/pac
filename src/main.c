@@ -299,10 +299,19 @@ int main(int argc, char** argv) {
 
   // pac init
   char* base_path = SDL_GetBasePath();
+  // ignoring "-psn" argument from macOS Finder
+  // https://hg.libsdl.org/SDL/file/c005c49beaa9/test/testdropfile.c#l47
+  if (argc > 1 && SDL_strncmp(argv[1], "-psn", 4) == 0) {
+    argc -= 1;
+    argv += 1;
+  }
   char* rom_dir = argc > 1 ? argv[1] : base_path;
 
   p = SDL_calloc(1, sizeof(pac));
   if (pac_init(p, rom_dir) != 0) {
+    SDL_ShowSimpleMessageBox(
+        SDL_MESSAGEBOX_ERROR, "Missing rom files",
+        "Please copy rom files next to pac executable.", window);
     return 1;
   }
   p->sample_rate = audio_spec.freq;
