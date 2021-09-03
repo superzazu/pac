@@ -18,21 +18,21 @@
 typedef struct pac pac;
 struct pac {
   z80 cpu;
-  u8 rom[0x10000]; // 0x0000-0x4000
-  u8 ram[0x1000]; // 0x4000-0x5000
-  u8 sprite_pos[0x10]; // 0x5060-0x506f
+  uint8_t rom[0x10000]; // 0x0000-0x4000
+  uint8_t ram[0x1000]; // 0x4000-0x5000
+  uint8_t sprite_pos[0x10]; // 0x5060-0x506f
 
-  u8 color_rom[32];
-  u8 palette_rom[0x100];
-  u8 tile_rom[0x1000];
-  u8 sprite_rom[0x1000];
-  u8 sound_rom1[0x100];
-  u8 sound_rom2[0x100];
+  uint8_t color_rom[32];
+  uint8_t palette_rom[0x100];
+  uint8_t tile_rom[0x1000];
+  uint8_t sprite_rom[0x1000];
+  uint8_t sound_rom1[0x100];
+  uint8_t sound_rom2[0x100];
 
-  u8 tiles[256 * 8 * 8]; // to store predecoded tiles
-  u8 sprites[64 * 16 * 16]; // to store predecoded sprites
+  uint8_t tiles[256 * 8 * 8]; // to store predecoded tiles
+  uint8_t sprites[64 * 16 * 16]; // to store predecoded sprites
 
-  u8 int_vector;
+  uint8_t int_vector;
   bool vblank_enabled;
   bool sound_enabled;
   bool flip_screen;
@@ -45,7 +45,7 @@ struct pac {
   bool board_test, p1_start, p2_start;
 
   // ppu
-  u8 screen_buffer[PAC_SCREEN_HEIGHT * PAC_SCREEN_WIDTH * 3];
+  uint8_t screen_buffer[PAC_SCREEN_HEIGHT * PAC_SCREEN_WIDTH * 3];
   void (*update_screen)(pac* const n);
 
   // audio
@@ -59,7 +59,7 @@ struct pac {
 
 int pac_init(pac* const p, const char* rom_dir);
 void pac_quit(pac* const p);
-void pac_update(pac* const p, int ms);
+void pac_update(pac* const p, unsigned int ms);
 
 void pac_cheat_invincibility(pac* const p);
 

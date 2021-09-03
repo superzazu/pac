@@ -1,6 +1,6 @@
 #include "pac.h"
 
-static u8 rb(void* userdata, u16 addr) {
+static uint8_t rb(void* userdata, uint16_t addr) {
   pac* const p = (pac*) userdata;
 
   // according to https://www.csh.rit.edu/~jerry/arcade/pacman/daves/
@@ -46,7 +46,7 @@ static u8 rb(void* userdata, u16 addr) {
   return 0xff;
 }
 
-static void wb(void* userdata, u16 addr, u8 val) {
+static void wb(void* userdata, uint16_t addr, uint8_t val) {
   pac* const p = (pac*) userdata;
 
   // according to https://www.csh.rit.edu/~jerry/arcade/pacman/daves/
@@ -85,11 +85,11 @@ static void wb(void* userdata, u16 addr, u8 val) {
   }
 }
 
-static u8 port_in(z80* const z, u8 port) {
+static uint8_t port_in(z80* const z, uint8_t port) {
   return 0;
 }
 
-static void port_out(z80* const z, u8 port, u8 val) {
+static void port_out(z80* const z, uint8_t port, uint8_t val) {
   pac* const p = (pac*) z->userdata;
 
   // setting the interrupt vector
@@ -100,7 +100,7 @@ static void port_out(z80* const z, u8 port, u8 val) {
 
 // appends two NULL-terminated strings, creating a new string in the process.
 // The pointer returned is owned by the user.
-static char* append_path(const char* s1, const char* s2) {
+static inline char* append_path(const char* s1, const char* s2) {
   const int buf_size = strlen(s1) + strlen(s2) + 1;
   char* path = calloc(buf_size, sizeof(char));
   if (path == NULL) {
@@ -111,14 +111,15 @@ static char* append_path(const char* s1, const char* s2) {
 }
 
 // copies "nb_bytes" bytes from a file into memory
-static int load_file(const char* filename, u8* memory, size_t nb_bytes) {
+static inline int load_file(
+    const char* filename, uint8_t* memory, size_t nb_bytes) {
   FILE* f = fopen(filename, "rb");
   if (f == NULL) {
     fprintf(stderr, "error: can't open file '%s'.\n", filename);
     return 1;
   }
 
-  size_t result = fread(memory, sizeof(u8), nb_bytes, f);
+  size_t result = fread(memory, sizeof(uint8_t), nb_bytes, f);
   if (result != nb_bytes) {
     fprintf(stderr, "error: while reading file '%s'\n", filename);
     return 1;
@@ -135,8 +136,9 @@ static int load_file(const char* filename, u8* memory, size_t nb_bytes) {
 // following that pattern: 0bBBGGGRRR.
 // Each color component corresponds to a color intensity.
 // @TODO: add comment on how to get from color intensity to RGB color.
-static void get_color(pac* const p, u8 color_no, u8* r, u8* g, u8* b) {
-  const u8 data = p->color_rom[color_no];
+static inline void get_color(
+    pac* const p, uint8_t color_no, uint8_t* r, uint8_t* g, uint8_t* b) {
+  const uint8_t data = p->color_rom[color_no];
   *r = ((data >> 0) & 1) * 0x21 + ((data >> 1) & 1) * 0x47 +
        ((data >> 2) & 1) * 0x97;
   *g = ((data >> 3) & 1) * 0x21 + ((data >> 4) & 1) * 0x47 +
@@ -146,7 +148,7 @@ static void get_color(pac* const p, u8 color_no, u8* r, u8* g, u8* b) {
 
 // Color palettes are defined in palette_rom (82s126.4a): each palette contains
 // four colors (one byte for each color).
-static void get_palette(pac* const p, u8 pal_no, u8* pal) {
+static inline void get_palette(pac* const p, uint8_t pal_no, uint8_t* pal) {
   pal_no &= 0x3f;
   pal[0] = p->palette_rom[pal_no * 4 + 0];
   pal[1] = p->palette_rom[pal_no * 4 + 1];
@@ -156,12 +158,11 @@ static void get_palette(pac* const p, u8 pal_no, u8* pal) {
 
 // decodes a strip from pacman tile/sprite roms to a bitmap output where each
 // byte represents one pixel.
-static void decode_strip(
-    pac* const p, u8* const input, u8* const output, int bx, int by,
-    int img_width) {
+static inline void decode_strip(pac* const p, uint8_t* const input,
+    uint8_t* const output, int bx, int by, int img_width) {
   const int base_i = by * img_width + bx;
   for (int x = 0; x < 8; x++) {
-    u8 strip = *(input + x);
+    uint8_t strip = *(input + x);
 
     for (int y = 0; y < 4; y++) {
       // bitmaps are stored mirrored in memory, so we need to read it
@@ -174,7 +175,7 @@ static void decode_strip(
 }
 
 // preloads sprites and tiles
-static void preload_images(pac* const p) {
+static inline void preload_images(pac* const p) {
   // sprites and tiles are images that are stored in sprite/tile rom.
   // in memory, those images are represented using vertical "strips"
   // of 8*4px, each strip being 8 bytes long (each pixel is stored on two
@@ -187,8 +188,8 @@ static void preload_images(pac* const p) {
   const int NB_TILES = 256;
   memset(p->tiles, 0, NB_TILES * NB_PIXELS_PER_TILE);
   for (int i = 0; i < NB_TILES; i++) {
-    u8* const tile = &p->tiles[i * NB_PIXELS_PER_TILE];
-    u8* const rom = &p->tile_rom[i * (LEN_STRIP_BYTES * 2)];
+    uint8_t* const tile = &p->tiles[i * NB_PIXELS_PER_TILE];
+    uint8_t* const rom = &p->tile_rom[i * (LEN_STRIP_BYTES * 2)];
 
     decode_strip(p, rom + 0, tile, 0, 4, TILE_WIDTH);
     decode_strip(p, rom + 8, tile, 0, 0, TILE_WIDTH);
@@ -200,8 +201,8 @@ static void preload_images(pac* const p) {
   const int NB_SPRITES = 64;
   memset(p->sprites, 0, NB_SPRITES * NB_PIXELS_PER_SPRITE);
   for (int i = 0; i < NB_SPRITES; i++) {
-    u8* const sprite = &p->sprites[i * NB_PIXELS_PER_SPRITE];
-    u8* const rom = &p->sprite_rom[i * (LEN_STRIP_BYTES * 8)];
+    uint8_t* const sprite = &p->sprites[i * NB_PIXELS_PER_SPRITE];
+    uint8_t* const rom = &p->sprite_rom[i * (LEN_STRIP_BYTES * 8)];
 
     decode_strip(p, rom + 0 * 8, sprite, 8, 12, SPRITE_WIDTH);
     decode_strip(p, rom + 1 * 8, sprite, 8, 0, SPRITE_WIDTH);
@@ -215,7 +216,8 @@ static void preload_images(pac* const p) {
   }
 }
 
-static void draw_tile(pac* const p, u8 tile_no, u8* pal, u16 x, u16 y) {
+static inline void draw_tile(
+    pac* const p, uint8_t tile_no, uint8_t* pal, uint16_t x, uint16_t y) {
   if (x < 0 || x >= PAC_SCREEN_WIDTH) {
     return;
   }
@@ -224,19 +226,17 @@ static void draw_tile(pac* const p, u8 tile_no, u8* pal, u16 x, u16 y) {
     int px = i % 8;
     int py = i / 8;
 
-    u8 color = p->tiles[tile_no * 64 + i];
+    uint8_t color = p->tiles[tile_no * 64 + i];
     int screenbuf_pos = (y + py) * PAC_SCREEN_WIDTH + (x + px);
 
-    get_color(
-        p, pal[color], &p->screen_buffer[screenbuf_pos * 3 + 0],
+    get_color(p, pal[color], &p->screen_buffer[screenbuf_pos * 3 + 0],
         &p->screen_buffer[screenbuf_pos * 3 + 1],
         &p->screen_buffer[screenbuf_pos * 3 + 2]);
   }
 }
 
-static void draw_sprite(
-    pac* const p, u8 sprite_no, u8* pal, int16_t x, int16_t y, bool flip_x,
-    bool flip_y) {
+static inline void draw_sprite(pac* const p, uint8_t sprite_no, uint8_t* pal,
+    int16_t x, int16_t y, bool flip_x, bool flip_y) {
   if (x <= -16 || x > PAC_SCREEN_WIDTH) {
     return;
   }
@@ -247,7 +247,7 @@ static void draw_sprite(
     int px = i % 16;
     int py = i / 16;
 
-    u8 color = p->sprites[sprite_no * 256 + i];
+    uint8_t color = p->sprites[sprite_no * 256 + i];
 
     // color 0 is transparent
     if (pal[color] == 0) {
@@ -262,30 +262,29 @@ static void draw_sprite(
       continue;
     }
 
-    get_color(
-        p, pal[color], &p->screen_buffer[screenbuf_pos * 3 + 0],
+    get_color(p, pal[color], &p->screen_buffer[screenbuf_pos * 3 + 0],
         &p->screen_buffer[screenbuf_pos * 3 + 1],
         &p->screen_buffer[screenbuf_pos * 3 + 2]);
   }
 }
 
-static void pac_draw(pac* const p) {
+static inline void pac_draw(pac* const p) {
   // 1. writing tiles according to VRAM
 
-  const u16 VRAM_SCREEN_BOT = 0x4000;
-  const u16 VRAM_SCREEN_MID = 0x4000 + 64;
-  const u16 VRAM_SCREEN_TOP = 0x4000 + 64 + 0x380;
+  const uint16_t VRAM_SCREEN_BOT = 0x4000;
+  const uint16_t VRAM_SCREEN_MID = 0x4000 + 64;
+  const uint16_t VRAM_SCREEN_TOP = 0x4000 + 64 + 0x380;
 
   int x, y, i;
-  u8 palette[4];
+  uint8_t palette[4];
 
   // bottom of screen:
   x = 31;
   y = 34;
   i = VRAM_SCREEN_BOT;
   while (x != 31 || y != 36) {
-    const u8 tile_no = rb(p, i);
-    const u8 palette_no = rb(p, i + 0x400);
+    const uint8_t tile_no = rb(p, i);
+    const uint8_t palette_no = rb(p, i + 0x400);
 
     get_palette(p, palette_no, palette);
     draw_tile(p, tile_no, palette, (x - 2) * 8, y * 8);
@@ -304,8 +303,8 @@ static void pac_draw(pac* const p) {
   y = 2;
   i = VRAM_SCREEN_MID;
   while (x != 1 || y != 2) {
-    const u8 tile_no = rb(p, i);
-    const u8 palette_no = rb(p, i + 0x400);
+    const uint8_t tile_no = rb(p, i);
+    const uint8_t palette_no = rb(p, i + 0x400);
 
     get_palette(p, palette_no, palette);
     draw_tile(p, tile_no, palette, (x - 2) * 8, y * 8);
@@ -324,8 +323,8 @@ static void pac_draw(pac* const p) {
   y = 0;
   i = VRAM_SCREEN_TOP;
   while (x != 31 || y != 2) {
-    const u8 tile_no = rb(p, i);
-    const u8 palette_no = rb(p, i + 0x400);
+    const uint8_t tile_no = rb(p, i);
+    const uint8_t palette_no = rb(p, i + 0x400);
 
     get_palette(p, palette_no, palette);
     draw_tile(p, tile_no, palette, (x - 2) * 8, y * 8);
@@ -340,19 +339,19 @@ static void pac_draw(pac* const p) {
   }
 
   // 2. drawing the 8 sprites (in reverse order)
-  const u16 VRAM_SPRITES_INFO = 0x4FF0;
+  const uint16_t VRAM_SPRITES_INFO = 0x4FF0;
   for (int s = 7; s >= 0; s--) {
     // the screen coordinates of a sprite start on the lower right corner
     // of the main screen:
     const int16_t x = PAC_SCREEN_WIDTH - p->sprite_pos[s * 2] + 15;
     const int16_t y = PAC_SCREEN_HEIGHT - p->sprite_pos[s * 2 + 1] - 16;
 
-    const u8 sprite_info = rb(p, VRAM_SPRITES_INFO + s * 2);
-    const u8 palette_no = rb(p, VRAM_SPRITES_INFO + s * 2 + 1);
+    const uint8_t sprite_info = rb(p, VRAM_SPRITES_INFO + s * 2);
+    const uint8_t palette_no = rb(p, VRAM_SPRITES_INFO + s * 2 + 1);
 
     const bool flip_x = (sprite_info >> 1) & 1;
     const bool flip_y = (sprite_info >> 0) & 1;
-    const u8 sprite_no = sprite_info >> 2;
+    const uint8_t sprite_no = sprite_info >> 2;
 
     get_palette(p, palette_no, palette);
     draw_sprite(p, sprite_no, palette, x, y, flip_x, flip_y);
@@ -360,7 +359,7 @@ static void pac_draw(pac* const p) {
 }
 
 // generates audio for one frame
-static void sound_update(pac* const p) {
+static inline void sound_update(pac* const p) {
   if (!p->sound_enabled || p->mute_audio) {
     return;
   }
@@ -481,7 +480,7 @@ void pac_quit(pac* const p) {
 }
 
 // updates emulation for "ms" milliseconds.
-void pac_update(pac* const p, int ms) {
+void pac_update(pac* const p, unsigned int ms) {
   // machine executes exactly PAC_CLOCK_SPEED cycles every second,
   // so we need to execute "ms * PAC_CLOCK_SPEED / 1000"
   int count = 0;

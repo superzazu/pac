@@ -55,15 +55,13 @@ static void screenshot(pac* const p) {
 
   char* filename = SDL_calloc(50, sizeof(char));
 
-  sprintf(
-      filename, "%d-%d-%d %d.%d.%d - %s.bmp", tm.tm_year + 1900, tm.tm_mon + 1,
-      tm.tm_mday, tm.tm_hour, tm.tm_min, tm.tm_sec, "pac");
+  sprintf(filename, "%d-%d-%d %d.%d.%d - %s.bmp", tm.tm_year + 1900,
+      tm.tm_mon + 1, tm.tm_mday, tm.tm_hour, tm.tm_min, tm.tm_sec, "pac");
 
   // if file already exists, we don't want to erase it
   FILE* f = fopen(filename, "r");
   if (f != NULL) {
-    SDL_LogError(
-        SDL_LOG_CATEGORY_APPLICATION,
+    SDL_LogError(SDL_LOG_CATEGORY_APPLICATION,
         "Cannot save screenshot: file %s already exists", filename);
     SDL_free(filename);
     fclose(f);
@@ -74,9 +72,8 @@ static void screenshot(pac* const p) {
   // render screen buffer to BMP file
   const uint32_t pitch = sizeof(uint8_t) * 3 * PAC_SCREEN_WIDTH;
   const uint8_t depth = 32;
-  SDL_Surface* s = SDL_CreateRGBSurfaceWithFormatFrom(
-      p->screen_buffer, PAC_SCREEN_WIDTH, PAC_SCREEN_HEIGHT, depth, pitch,
-      SDL_PIXELFORMAT_RGB24);
+  SDL_Surface* s = SDL_CreateRGBSurfaceWithFormatFrom(p->screen_buffer,
+      PAC_SCREEN_WIDTH, PAC_SCREEN_HEIGHT, depth, pitch, SDL_PIXELFORMAT_RGB24);
   SDL_SaveBMP(s, filename);
   SDL_FreeSurface(s);
 
@@ -223,9 +220,8 @@ int main(int argc, char** argv) {
   SDL_SetHint(SDL_HINT_BMP_SAVE_LEGACY_FORMAT, "1");
 
   // create SDL window
-  SDL_Window* window = SDL_CreateWindow(
-      "pac", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
-      PAC_SCREEN_WIDTH * 2, PAC_SCREEN_HEIGHT * 2,
+  SDL_Window* window = SDL_CreateWindow("pac", SDL_WINDOWPOS_CENTERED,
+      SDL_WINDOWPOS_CENTERED, PAC_SCREEN_WIDTH * 2, PAC_SCREEN_HEIGHT * 2,
       SDL_WINDOW_RESIZABLE | SDL_WINDOW_ALLOW_HIGHDPI);
 
   if (window == NULL) {
@@ -250,9 +246,8 @@ int main(int argc, char** argv) {
   SDL_GetRendererInfo(renderer, &renderer_info);
   SDL_Log("Using renderer %s", renderer_info.name);
 
-  texture = SDL_CreateTexture(
-      renderer, SDL_PIXELFORMAT_RGB24, SDL_TEXTUREACCESS_STREAMING,
-      PAC_SCREEN_WIDTH, PAC_SCREEN_HEIGHT);
+  texture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_RGB24,
+      SDL_TEXTUREACCESS_STREAMING, PAC_SCREEN_WIDTH, PAC_SCREEN_HEIGHT);
   if (texture == NULL) {
     SDL_Log("Unable to create texture: %s", SDL_GetError());
     return 1;
@@ -270,8 +265,7 @@ int main(int argc, char** argv) {
   audio_device = SDL_OpenAudioDevice(NULL, 0, &audio_spec, NULL, 0);
 
   if (audio_device == 0) {
-    SDL_LogError(
-        SDL_LOG_CATEGORY_APPLICATION, "failed to open audio: %s",
+    SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "failed to open audio: %s",
         SDL_GetError());
   } else {
     const char* driver_name = SDL_GetCurrentAudioDriver();
@@ -290,9 +284,8 @@ int main(int argc, char** argv) {
             "game controller detected: %s", SDL_GameControllerNameForIndex(i));
         break;
       } else {
-        SDL_LogError(
-            SDL_LOG_CATEGORY_APPLICATION, "could not open game controller: %s",
-            SDL_GetError());
+        SDL_LogError(SDL_LOG_CATEGORY_APPLICATION,
+            "could not open game controller: %s", SDL_GetError());
       }
     }
   }
@@ -309,8 +302,7 @@ int main(int argc, char** argv) {
 
   p = SDL_calloc(1, sizeof(pac));
   if (pac_init(p, rom_dir) != 0) {
-    SDL_ShowSimpleMessageBox(
-        SDL_MESSAGEBOX_ERROR, "Missing rom files",
+    SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, "Missing rom files",
         "Please copy rom files next to pac executable.", window);
     return 1;
   }

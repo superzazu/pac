@@ -7,6 +7,6 @@ AllowShortLoopsOnASingleLine: false
 AllowShortCaseLabelsOnASingleLine: true
 AllowShortBlocksOnASingleLine: false
 AlignEscapedNewlines: DontAlign
-AlignAfterOpenBracket: AlwaysBreak
+AlignAfterOpenBracket: DontAlign
 SpaceAfterCStyleCast: true
 AlignTrailingComments: false
